@@ -1,4 +1,6 @@
 import pickle
+import numpy as np
+import pandas as pd  # Import Pandas
 from flask import Flask, request, render_template
 
 # Load the saved model
@@ -13,20 +15,42 @@ def home():
     return render_template('index.html')
 
 # Define the prediction route
-@app.route('/predict', methods=['POST', 'GET'])
+@app.route('/predict', methods=['POST'])
 def predict():
-    # Retrieve input values from HTML form
-    sepal_length = float(request.form['sepal_length'])
-    sepal_width = float(request.form['sepal_width'])
-    petal_length = float(request.form['petal_length'])
-    petal_width = float(request.form['petal_width'])  # Fixed the typo
+    try:
+        # Retrieve input values safely
+        sepal_length = request.form.get('sepal_length', '').strip()
+        sepal_width = request.form.get('sepal_width', '').strip()
+        petal_length = request.form.get('petal_length', '').strip()
+        petal_width = request.form.get('petal_width', '').strip()
 
-    # Prepare the input data
-    input_features = [[sepal_length, sepal_width, petal_length, petal_width]]
-    result = model.predict(input_features)[0]
+        # Ensure all fields have values
+        if not sepal_length or not sepal_width or not petal_length or not petal_width:
+            return render_template('index.html', prediction="Error: All fields are required!")
 
-    # Render the result on the webpage
-    return render_template('index.html', prediction=result)
+        # Convert inputs to float
+        sepal_length = float(sepal_length)
+        sepal_width = float(sepal_width)
+        petal_length = float(petal_length)
+        petal_width = float(petal_width)
+
+        # Convert input data to a Pandas DataFrame (ensuring it has column names)
+        feature_names = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width']
+        input_features = pd.DataFrame([[sepal_length, sepal_width, petal_length, petal_width]], columns=feature_names)
+
+        # Debugging print statements
+        print(f"Received Input Data:\n{input_features}")
+
+        # Make prediction
+        result = model.predict(input_features)[0]
+
+        # Print prediction for debugging
+        print(f"Prediction Result: {result}")
+
+        return render_template('index.html', prediction=result)
+
+    except ValueError:
+        return render_template('index.html', prediction="Error: Please enter valid numeric values!")
 
 # Run the Flask app
 if __name__ == '__main__':
