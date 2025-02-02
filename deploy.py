@@ -26,7 +26,7 @@ def predict():
 
         # Ensure all fields have values
         if not sepal_length or not sepal_width or not petal_length or not petal_width:
-            return render_template('index.html', prediction="Error: All fields are required!")
+            return render_template('index.html', result="Error: All fields are required!")
 
         # Convert inputs to float
         sepal_length = float(sepal_length)
@@ -47,10 +47,10 @@ def predict():
         # Print prediction for debugging
         print(f"Prediction Result: {result}")
 
-        return render_template('index.html', prediction=result)
+        return render_template('index.html', result=result)
 
     except ValueError:
-        return render_template('index.html', prediction="Error: Please enter valid numeric values!")
+        return render_template('index.html', result="Error: Please enter valid numeric values!")
 
 # Run the Flask app
 if __name__ == '__main__':
