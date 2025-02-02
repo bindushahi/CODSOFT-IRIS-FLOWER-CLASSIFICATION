@@ -1,57 +1,39 @@
-import pickle
-import numpy as np
-import pandas as pd  # Import Pandas
 from flask import Flask, request, render_template
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+import joblib as joblib
+import os
 
-# Load the saved model
-model = pickle.load(open('saved_model.sav', 'rb'))
+model = joblib.load('saved_model1.pkl')
+scaler = joblib.load('scaler.save')
 
-# Initialize the Flask application
 app = Flask(__name__)
 
-# Home route
+IMG_FOLDER = os.path.join('static', 'IMG')
+app.config['UPLOAD_FOLDER'] = IMG_FOLDER
+
+
 @app.route('/')
-def home():
+def index():
     return render_template('index.html')
 
-# Define the prediction route
-@app.route('/predict', methods=['POST'])
-def predict():
-    try:
-        # Retrieve input values safely
-        sepal_length = request.form.get('sepal_length', '').strip()
-        sepal_width = request.form.get('sepal_width', '').strip()
-        petal_length = request.form.get('petal_length', '').strip()
-        petal_width = request.form.get('petal_width', '').strip()
 
-        # Ensure all fields have values
-        if not sepal_length or not sepal_width or not petal_length or not petal_width:
-            return render_template('index.html', result="Error: All fields are required!")
+@app.route('/', methods=['GET', 'POST'])
+def home():
+    if request.method == 'POST':
+        sl = request.form['SepalLength']
+        sw = request.form['SepalWidth']
+        pl = request.form['PetalLength']
+        pw = request.form['PetalWidth']
+        data = np.array([[sl, sw, pl, pw]], dtype=float)
+        x = scaler.transform(data)
+        prediction = model.predict(x)
+        image = prediction[0] + '.png'
+        image = os.path.join(app.config['UPLOAD_FOLDER'], image)
+        return render_template('index.html', prediction=prediction[0], image=image)
+    return render_template('index.html')
 
-        # Convert inputs to float
-        sepal_length = float(sepal_length)
-        sepal_width = float(sepal_width)
-        petal_length = float(petal_length)
-        petal_width = float(petal_width)
 
-        # Convert input data to a Pandas DataFrame (ensuring it has column names)
-        feature_names = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width']
-        input_features = pd.DataFrame([[sepal_length, sepal_width, petal_length, petal_width]], columns=feature_names)
-
-        # Debugging print statements
-        print(f"Received Input Data:\n{input_features}")
-
-        # Make prediction
-        result = model.predict(input_features)[0]
-
-        # Print prediction for debugging
-        print(f"Prediction Result: {result}")
-
-        return render_template('index.html', result=result)
-
-    except ValueError:
-        return render_template('index.html', result="Error: Please enter valid numeric values!")
-
-# Run the Flask app
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8080)
+
